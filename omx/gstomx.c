@@ -58,6 +58,36 @@ gst_omx_core_acquire (const gchar * filename)
     core->user_count = 0;
     g_hash_table_insert (core_handles, g_strdup (filename), core);
 
+    {
+      gchar *bcm_host_filename;
+      gchar *bcm_host_path;
+      gchar *path_end;
+      GModule *bcm_host_module;
+      void (*bcm_host_init) (void);
+
+      path_end = g_strrstr (filename, "/");
+      bcm_host_path = g_strndup (filename, path_end - filename + 1);
+      bcm_host_filename = g_strconcat (bcm_host_path, "libbcm_host.so", NULL);
+
+      bcm_host_module = g_module_open (bcm_host_filename, G_MODULE_BIND_LAZY);
+
+      g_free (bcm_host_filename);
+      g_free (bcm_host_path);
+
+      if (!bcm_host_module) {
+        GST_ERROR ("Failed to load libbcm_host.so");
+        goto error;
+      }
+
+      if (!g_module_symbol (bcm_host_module, "bcm_host_init",
+              (gpointer *) & bcm_host_init)) {
+        GST_ERROR ("Failed to load symbol 'bcm_host_init' from libbcm_host.so");
+        goto error;
+      }
+
+      bcm_host_init ();
+    }
+
     core->module = g_module_open (filename, G_MODULE_BIND_LAZY);
     if (!core->module)
       goto load_failed;
