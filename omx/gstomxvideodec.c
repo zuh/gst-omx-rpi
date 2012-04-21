@@ -670,6 +670,7 @@ gst_omx_video_dec_loop (GstOMXVideoDec * self)
 
     switch (port_def.format.video.eColorFormat) {
       case OMX_COLOR_FormatYUV420Planar:
+      case OMX_COLOR_FormatYUV420PackedPlanar:
         state->format = GST_VIDEO_FORMAT_I420;
         break;
       case OMX_COLOR_FormatYUV420SemiPlanar:
@@ -1005,6 +1006,7 @@ gst_omx_video_dec_negotiate (GstOMXVideoDec * self)
     if (err == OMX_ErrorNone) {
       switch (param.eColorFormat) {
         case OMX_COLOR_FormatYUV420Planar:
+        case OMX_COLOR_FormatYUV420PackedPlanar:
           gst_caps_append_structure (comp_supported_caps,
               gst_structure_new ("video/x-raw-yuv",
                   "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC ('I', '4', '2',
@@ -1048,7 +1050,7 @@ gst_omx_video_dec_negotiate (GstOMXVideoDec * self)
 
   switch (format) {
     case GST_VIDEO_FORMAT_I420:
-      param.eColorFormat = OMX_COLOR_FormatYUV420Planar;
+      param.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
       break;
     case GST_VIDEO_FORMAT_NV12:
       param.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
