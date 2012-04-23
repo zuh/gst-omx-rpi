@@ -23,8 +23,11 @@
 
 #include <gst/gst.h>
 #include <string.h>
+
+#pragma pack(4)
 #include <OMX_Core.h>
 #include <OMX_Component.h>
+#pragma pack()
 
 #include "gstomxrecmutex.h"
 
