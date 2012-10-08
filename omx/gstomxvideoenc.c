@@ -1037,6 +1037,7 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
   GstOMXVideoEncClass *klass;
   gboolean needs_disable = FALSE;
   OMX_PARAM_PORTDEFINITIONTYPE port_def;
+  int stride;
 
   self = GST_OMX_VIDEO_ENC (encoder);
   klass = GST_OMX_VIDEO_ENC_GET_CLASS (encoder);
@@ -1074,7 +1075,10 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
       break;
   }
   port_def.format.video.nFrameWidth = state->width;
+  stride = gst_video_format_get_row_stride (state->format, 0, state->width);
+  port_def.format.video.nStride = GST_ROUND_UP_32(stride);
   port_def.format.video.nFrameHeight = state->height;
+  port_def.format.video.nSliceHeight = GST_ROUND_UP_16(state->height);
   if (state->fps_n == 0) {
     port_def.format.video.xFramerate = 0;
   } else {
