@@ -587,6 +587,13 @@ gst_omx_video_enc_change_state (GstElement * element, GstStateChange transition)
     case GST_STATE_CHANGE_NULL_TO_READY:
       if (!gst_omx_video_enc_open (self))
         ret = GST_STATE_CHANGE_FAILURE;
+
+      if (gst_omx_component_set_state (self->component,
+                                       OMX_StateIdle) != OMX_ErrorNone) {
+        GST_ERROR_OBJECT (self->component, "Failed to change state to IDLE");
+        ret = GST_STATE_CHANGE_FAILURE;
+      }
+
       break;
     case GST_STATE_CHANGE_READY_TO_PAUSED:
       if (self->in_port)
@@ -597,6 +604,14 @@ gst_omx_video_enc_change_state (GstElement * element, GstStateChange transition)
 
       self->draining = FALSE;
       self->started = FALSE;
+
+      /* Need to be in executing to finish prerolling */
+      if (gst_omx_component_set_state (self->component,
+                                       OMX_StateExecuting) != OMX_ErrorNone) {
+         GST_ERROR_OBJECT (self->component, "Failed to change state to PAUSE");
+        ret = GST_STATE_CHANGE_FAILURE;
+      }
+
       break;
     case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
       break;
@@ -1039,6 +1054,7 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
   GstOMXVideoEncClass *klass;
   gboolean needs_disable = FALSE;
   OMX_PARAM_PORTDEFINITIONTYPE port_def;
+  OMX_STATETYPE initial_state;
   int stride;
 
   self = GST_OMX_VIDEO_ENC (encoder);
@@ -1048,15 +1064,19 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
 
   gst_omx_port_get_port_definition (self->in_port, &port_def);
 
-  needs_disable =
-      gst_omx_component_get_state (self->component,
-      GST_CLOCK_TIME_NONE) != OMX_StateLoaded;
+  initial_state = gst_omx_component_get_state (self->component, GST_CLOCK_TIME_NONE);
+  needs_disable = initial_state != OMX_StateLoaded;
   /* If the component is not in Loaded state and a real format change happens
    * we have to disable the port and re-allocate all buffers. If no real
    * format change happened we can just exit here.
    */
   if (needs_disable) {
     gst_omx_video_enc_drain (self);
+
+    /* Make sure we are in idle for the port changes */
+    if (gst_omx_component_set_state (self->component,
+            OMX_StateIdle) != OMX_ErrorNone)
+      return FALSE;
 
     if (gst_omx_port_manual_reconfigure (self->in_port, TRUE) != OMX_ErrorNone)
       return FALSE;
@@ -1107,6 +1127,12 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
       return FALSE;
     if (gst_omx_port_manual_reconfigure (self->in_port, FALSE) != OMX_ErrorNone)
       return FALSE;
+
+    /* Restore the initial state */
+    if (gst_omx_component_set_state (self->component,
+            initial_state) != OMX_ErrorNone)
+      return FALSE;
+
   } else {
     if (gst_omx_component_set_state (self->component,
             OMX_StateIdle) != OMX_ErrorNone)
