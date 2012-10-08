@@ -109,6 +109,7 @@ gst_omx_h264_enc_set_format (GstOMXVideoEnc * enc, GstOMXPort * port,
   OMX_VIDEO_AVCPROFILETYPE profile = OMX_VIDEO_AVCProfileBaseline;
   OMX_VIDEO_AVCLEVELTYPE level = OMX_VIDEO_AVCLevel11;
   OMX_VIDEO_PARAM_PROFILELEVELTYPE param;
+  OMX_VIDEO_PARAM_PORTFORMATTYPE format;
   OMX_ERRORTYPE err;
 
   peercaps = gst_pad_peer_get_caps (GST_BASE_VIDEO_CODEC_SRC_PAD (enc));
@@ -205,6 +206,20 @@ gst_omx_h264_enc_set_format (GstOMXVideoEnc * enc, GstOMXPort * port,
     GST_ERROR_OBJECT (self,
         "Error setting profile %d and level %d: %s (0x%08x)", profile, level,
         gst_omx_error_to_string (err), err);
+    return FALSE;
+  }
+
+
+  GST_OMX_INIT_STRUCT (&format);
+  format.nPortIndex = GST_OMX_VIDEO_ENC (self)->out_port->index;
+  format.eCompressionFormat = OMX_VIDEO_CodingAVC;
+
+  err = gst_omx_component_set_parameter(GST_OMX_VIDEO_ENC (self)->component,
+                                        OMX_IndexParamVideoPortFormat, &format);
+  if (err != OMX_ErrorNone) {
+    GST_ERROR_OBJECT (self,
+                      "Error setting Video port format: %s (0x%08x)",
+                      gst_omx_error_to_string (err), err);
     return FALSE;
   }
 
