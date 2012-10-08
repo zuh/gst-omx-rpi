@@ -354,8 +354,10 @@ gst_omx_video_enc_open (GstOMXVideoEnc * self)
 
   self->in_port =
       gst_omx_component_add_port (self->component, klass->in_port_index);
+  gst_omx_port_set_enabled(self->in_port, FALSE);
   self->out_port =
       gst_omx_component_add_port (self->component, klass->out_port_index);
+  gst_omx_port_set_enabled(self->out_port, FALSE);
 
   if (!self->in_port || !self->out_port)
     return FALSE;
