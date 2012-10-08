@@ -1063,10 +1063,10 @@ gst_omx_video_enc_set_format (GstBaseVideoEncoder * encoder,
 
   switch (state->format) {
     case GST_VIDEO_FORMAT_I420:
-      port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420Planar;
+      port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedPlanar;
       break;
     case GST_VIDEO_FORMAT_NV12:
-      port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+      port_def.format.video.eColorFormat = OMX_COLOR_FormatYUV420PackedSemiPlanar;
       break;
     default:
       GST_ERROR_OBJECT (self, "Unsupported caps %" GST_PTR_FORMAT, state->caps);
