@@ -1663,6 +1663,7 @@ gst_omx_port_set_enabled_unlocked (GstOMXPort * port, gboolean enabled)
      */
     if (enabled && port->port_def.eDir == OMX_DirOutput) {
       GstOMXBuffer *buf;
+      GstOMXBuffer *firstbuf = g_queue_peek_head (port->pending_buffers);
 
       /* Enqueue all buffers for the component to fill */
       while ((buf = g_queue_pop_head (port->pending_buffers))) {
@@ -1690,6 +1691,13 @@ gst_omx_port_set_enabled_unlocked (GstOMXPort * port, gboolean enabled)
         }
         GST_DEBUG_OBJECT (comp->parent, "Passed buffer %p (%p) to component",
             buf, buf->omx_buf->pBuffer);
+
+        /* Protect against reusing buffers before they are handled if the
+         * FillBufferDone callback pushes them back to queue while in this loop.
+         * FIXME: Better fix would be to prevent that or use two queues...
+         */
+        if (firstbuf == g_queue_peek_head (port->pending_buffers))
+          break;
       }
     }
   }
